@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/arena/static/css/main.0f5c6a6f.css",
+    "main.js": "/arena/static/js/main.10a4533f.js",
+    "index.html": "/arena/index.html",
+    "main.0f5c6a6f.css.map": "/arena/static/css/main.0f5c6a6f.css.map",
+    "main.10a4533f.js.map": "/arena/static/js/main.10a4533f.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0f5c6a6f.css",
+    "static/js/main.10a4533f.js"
+  ]
+}
