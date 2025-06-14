@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useClans } from '../context/ClanContext';  // <-- import clan context
 
 export default function CreateClan() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const navigate = useNavigate();
+  const { addClan } = useClans();  // <-- get addClan from context
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // For now, we'll just log it and go back
     const newClan = {
       id: Date.now().toString(),
       name,
@@ -17,11 +18,9 @@ export default function CreateClan() {
       description,
     };
 
+    addClan(newClan);  // <-- add clan to global state
     console.log('New clan created:', newClan);
 
-    // TODO: Save to global or backend later
-
-    // Redirect to clans page
     navigate('/clans');
   };
 
