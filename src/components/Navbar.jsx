@@ -1,15 +1,37 @@
-import { Link } from 'react-router-dom';
+// src/components/Navbar.jsx
+import { NavLink } from 'react-router-dom';
 
 export default function Navbar() {
   return (
-    <nav className="bg-gray-900 text-white px-4 py-3 flex justify-between items-center shadow-md">
-      <h1 className="text-xl font-bold">ARENA</h1>
-      <ul className="flex space-x-4">
-        <li><Link to="/">Home</Link></li>
-        <li><Link to="/clans">Clans</Link></li>
-        <li><Link to="/challenges">Challenges</Link></li>
-        <li><Link to="/dashboard">Dashboard</Link></li>
-      </ul>
+    <nav className="bg-gray-800 p-4 text-white flex justify-between items-center">
+      <div className="font-bold text-xl">Arena</div>
+      <div className="space-x-4">
+        <NavLink
+          to="/"
+          className={({ isActive }) =>
+            isActive ? 'underline' : 'hover:underline'
+          }
+          end
+        >
+          Home
+        </NavLink>
+        <NavLink
+          to="/clans"
+          className={({ isActive }) =>
+            isActive ? 'underline' : 'hover:underline'
+          }
+        >
+          Clans
+        </NavLink>
+        <NavLink
+          to="/challenges"
+          className={({ isActive }) =>
+            isActive ? 'underline' : 'hover:underline'
+          }
+        >
+          Challenges
+        </NavLink>
+      </div>
     </nav>
   );
 }
