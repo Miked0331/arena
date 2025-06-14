@@ -8,6 +8,7 @@ import Challenges from './pages/Challenges';
 import Dashboard from './pages/Dashboard';
 import ClanProfile from './pages/ClanProfile';
 import CreateClan from './pages/CreateClan';
+import ClanDetails from './pages/ClanDetails';
 
 
 
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/clan/:id" element={<ClanProfile />} />
           <Route path="/clans/create" element={<CreateClan />} />
+          <Route path="/clans/:id" element={<ClanDetails />} />
         </Routes>
       </Layout>
     </Router>

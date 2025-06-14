@@ -27,6 +27,11 @@ export default function Clans() {
             >
               {clan.name}
             </Link>
+            <Link to={`/clans/${clan.id}`} className="block p-4 border-b hover:bg-gray-100">
+  <h2 className="text-xl font-semibold">{clan.name}</h2>
+  <p>{clan.description}</p>
+  <p>Members: {clan.members}</p>
+</Link>
             <p className="text-gray-600">Members: {clan.members}</p>
           </li>
         ))}

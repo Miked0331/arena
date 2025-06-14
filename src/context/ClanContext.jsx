@@ -4,20 +4,24 @@ const ClanContext = createContext();
 
 export const useClans = () => useContext(ClanContext);
 
-export const ClanProvider = ({ children }) => {
-  const [clans, setClans] = useState([
-    { id: '1', name: 'Red Raptors', members: 12, description: 'Fearless Gears warriors!' },
-    { id: '2', name: 'Steel Storm', members: 8, description: 'Unstoppable team of strategists.' },
-    { id: '3', name: 'Shadow Wolves', members: 15, description: 'Silent but deadly.' },
-  ]);
+export function ClanProvider({ children }) {
+  const [clans, setClans] = useState([]);
 
   const addClan = (clan) => {
-    setClans((prev) => [...prev, clan]);
+    setClans(prev => [...prev, clan]);
+  };
+
+  const updateClan = (id, updatedClan) => {
+    setClans(prev => prev.map(c => (c.id === id ? updatedClan : c)));
+  };
+
+  const deleteClan = (id) => {
+    setClans(prev => prev.filter(c => c.id !== id));
   };
 
   return (
-    <ClanContext.Provider value={{ clans, addClan }}>
+    <ClanContext.Provider value={{ clans, addClan, updateClan, deleteClan }}>
       {children}
     </ClanContext.Provider>
   );
-};
+}
