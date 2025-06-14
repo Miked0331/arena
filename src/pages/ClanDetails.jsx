@@ -1,4 +1,3 @@
-// src/pages/ClanDetails.jsx
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useClans } from '../context/ClanContext';
 import { useState } from 'react';
@@ -35,6 +34,10 @@ export default function ClanDetails() {
     }
   };
 
+  const handleJoin = () => {
+    updateClan(clan.id, { ...clan, members: clan.members + 1 });
+  };
+
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-white rounded shadow">
       {editing ? (
@@ -49,7 +52,6 @@ export default function ClanDetails() {
             />
           </div>
           <div>
-          
             <label className="block font-semibold mb-1">Description</label>
             <textarea
               className="w-full border px-3 py-2 rounded"
@@ -69,11 +71,25 @@ export default function ClanDetails() {
           <p className="mb-4">{clan.description}</p>
           <p><strong>Members:</strong> {clan.members}</p>
 
-          <div className="flex gap-2 mt-6">
-            <button onClick={() => setEditing(true)} className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+          <div className="flex flex-wrap gap-2 mt-6">
+            <button
+              onClick={handleJoin}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Join Clan
+            </button>
+
+            <button
+              onClick={() => setEditing(true)}
+              className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+            >
               Edit
             </button>
-            <button onClick={handleDelete} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+
+            <button
+              onClick={handleDelete}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            >
               Delete
             </button>
           </div>
