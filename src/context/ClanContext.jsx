@@ -1,4 +1,14 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { db } from '../firebase'; // adjust path if needed
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query
+} from 'firebase/firestore';
 
 const ClanContext = createContext();
 
@@ -7,16 +17,31 @@ export const useClans = () => useContext(ClanContext);
 export function ClanProvider({ children }) {
   const [clans, setClans] = useState([]);
 
-  const addClan = (clan) => {
-    setClans(prev => [...prev, clan]);
+  useEffect(() => {
+    const q = query(collection(db, 'clans'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const clansData = [];
+      querySnapshot.forEach((doc) => {
+        clansData.push({ id: doc.id, ...doc.data() });
+      });
+      setClans(clansData);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const addClan = async (clan) => {
+    await addDoc(collection(db, 'clans'), clan);
   };
 
-  const updateClan = (id, updatedClan) => {
-    setClans(prev => prev.map(c => (c.id === id ? updatedClan : c)));
+  const updateClan = async (id, updatedClan) => {
+    const clanRef = doc(db, 'clans', id);
+    await updateDoc(clanRef, updatedClan);
   };
 
-  const deleteClan = (id) => {
-    setClans(prev => prev.filter(c => c.id !== id));
+  const deleteClan = async (id) => {
+    const clanRef = doc(db, 'clans', id);
+    await deleteDoc(clanRef);
   };
 
   return (
