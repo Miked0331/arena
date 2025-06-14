@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Production build
+build/
+
+# Caching
+.cache/
+.eslintcache
+
+# Misc
+.DS_Store
+.env
