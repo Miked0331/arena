@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { db } from '../firebase'; // adjust path if needed
+// In src/context/ClanContext.js or wherever you import firebase
+import { db } from '../firebase/firebase';
 import {
   collection,
   addDoc,
