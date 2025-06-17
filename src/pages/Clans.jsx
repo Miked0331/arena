@@ -1,104 +1,196 @@
-// src/pages/Clans.jsx
-import React, { useState, useEffect } from 'react';
-import { db } from '../firebase/firebase';
-import { useAuth } from '../context/AuthContext';
-import {
-  collection,
-  addDoc,
-  getDocs,
-  updateDoc,
-  doc,
-  query,
-  where
-} from 'firebase/firestore';
+import React, { useEffect, useState } from "react";
+import { 
+  collection, 
+  query, 
+  onSnapshot, 
+  addDoc, 
+  updateDoc, 
+  doc, 
+  arrayUnion, 
+  arrayRemove, 
+  deleteDoc 
+} from "firebase/firestore";
+import { db, auth } from '../firebase/firebase';
 
 export default function Clans() {
-  const { currentUser } = useAuth();
   const [clans, setClans] = useState([]);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [userClanId, setUserClanId] = useState(null);
+  const [newClanName, setNewClanName] = useState("");
+  const [newClanDescription, setNewClanDescription] = useState("");
+  const [userId, setUserId] = useState(null);
+  const [inviteEmail, setInviteEmail] = useState(""); // For inviting members
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchClans();
+    const user = auth.currentUser;
+    if (user) setUserId(user.uid);
+
+    const q = query(collection(db, "clans"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const clanList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setClans(clanList);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
-
-  async function fetchClans() {
-    const snapshot = await getDocs(collection(db, 'clans'));
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setClans(data);
-
-    // Check if user is in a clan
-    const q = query(collection(db, 'clans'), where('members', 'array-contains', currentUser.uid));
-    const userClans = await getDocs(q);
-    if (!userClans.empty) {
-      setUserClanId(userClans.docs[0].id);
-    }
-  }
 
   async function handleCreateClan(e) {
     e.preventDefault();
-    if (!currentUser || userClanId) return;
+    if (!newClanName.trim()) return alert("Clan name is required");
+    if (!userId) return alert("You must be logged in to create a clan.");
 
-    const newClan = {
-      name,
-      description,
-      owner: currentUser.uid,
-      members: [currentUser.uid],
-    };
-
-    await addDoc(collection(db, 'clans'), newClan);
-    setName('');
-    setDescription('');
-    fetchClans();
+    try {
+      await addDoc(collection(db, "clans"), {
+        name: newClanName.trim(),
+        description: newClanDescription.trim(),
+        ownerId: userId,
+        members: [userId],
+        createdAt: new Date()
+      });
+      setNewClanName("");
+      setNewClanDescription("");
+    } catch (error) {
+      console.error("Error creating clan:", error);
+      alert("Failed to create clan.");
+    }
   }
 
-  async function handleJoinClan(clanId) {
-    const clanRef = doc(db, 'clans', clanId);
-    await updateDoc(clanRef, {
-      members: [...clans.find(c => c.id === clanId).members, currentUser.uid]
-    });
-    fetchClans();
+  async function inviteMember(clanId) {
+    if (!inviteEmail.trim()) return alert("Enter email to invite");
+
+    try {
+      const invitedUserId = await getUserIdByEmail(inviteEmail.trim());
+      if (!invitedUserId) return alert("User not found.");
+
+      const clanRef = doc(db, "clans", clanId);
+      await updateDoc(clanRef, {
+        members: arrayUnion(invitedUserId)
+      });
+      setInviteEmail("");
+    } catch (error) {
+      console.error("Invite error:", error);
+      alert("Failed to invite user.");
+    }
   }
 
-  async function handleLeaveClan() {
-    const clan = clans.find(c => c.id === userClanId);
-    const updatedMembers = clan.members.filter(uid => uid !== currentUser.uid);
-    const clanRef = doc(db, 'clans', userClanId);
-    await updateDoc(clanRef, { members: updatedMembers });
-    setUserClanId(null);
-    fetchClans();
+  async function removeMember(clanId, memberId) {
+    if (!window.confirm("Remove this member?")) return;
+
+    try {
+      const clanRef = doc(db, "clans", clanId);
+      await updateDoc(clanRef, {
+        members: arrayRemove(memberId)
+      });
+    } catch (error) {
+      console.error("Remove member error:", error);
+      alert("Failed to remove member.");
+    }
+  }
+
+  async function deleteClan(clanId) {
+    if (!window.confirm("Are you sure you want to delete this clan? This action cannot be undone.")) return;
+
+    try {
+      await deleteDoc(doc(db, "clans", clanId));
+    } catch (error) {
+      console.error("Delete clan error:", error);
+      alert("Failed to delete clan.");
+    }
   }
 
   return (
-    <div>
-      <h2>Clans</h2>
+    <div style={{ maxWidth: 800, margin: "auto", padding: 20 }}>
+      <h1>Clans</h1>
 
-      {userClanId ? (
-        <div>
-          <p>You are in a clan.</p>
-          <button onClick={handleLeaveClan}>Leave Clan</button>
+      <form onSubmit={handleCreateClan} style={{ marginBottom: 30 }}>
+        <h2>Create a New Clan</h2>
+        <input
+          type="text"
+          placeholder="Clan Name"
+          value={newClanName}
+          onChange={e => setNewClanName(e.target.value)}
+          required
+          style={{ width: "100%", padding: 8, marginBottom: 10 }}
+        />
+        <textarea
+          placeholder="Description (optional)"
+          value={newClanDescription}
+          onChange={e => setNewClanDescription(e.target.value)}
+          style={{ width: "100%", padding: 8, marginBottom: 10 }}
+        />
+        <button type="submit">Create Clan</button>
+      </form>
+
+      <h2>All Clans</h2>
+      {loading && <p>Loading clans...</p>}
+      {!loading && clans.length === 0 && <p>No clans yet</p>}
+
+      {clans.map(clan => (
+        <div key={clan.id} style={{ border: "1px solid #ccc", padding: 15, marginBottom: 15 }}>
+          <h3>{clan.name}</h3>
+          <p>{clan.description || "No description"}</p>
+          <p><strong>Members:</strong> {clan.members?.length || 0}</p>
+
+          {clan.ownerId === userId && (
+            <>
+              <button
+                style={{ background: "red", color: "white", marginBottom: 10 }}
+                onClick={() => deleteClan(clan.id)}
+              >
+                Delete Clan
+              </button>
+
+              <h4>Manage Members</h4>
+              <div>
+                <input
+                  type="email"
+                  placeholder="Email to invite"
+                  value={inviteEmail}
+                  onChange={e => setInviteEmail(e.target.value)}
+                />
+                <button onClick={() => inviteMember(clan.id)}>Invite</button>
+              </div>
+
+              <ul>
+                {clan.members?.map(memberId => (
+                  <li key={memberId} style={{ marginTop: 5 }}>
+                    {memberId}
+                    {memberId !== userId && (
+                      <button
+                        style={{ marginLeft: 10 }}
+                        onClick={() => removeMember(clan.id, memberId)}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {clan.ownerId !== userId && clan.members?.includes(userId) && (
+            <p>You are a member of this clan.</p>
+          )}
+
+          {clan.ownerId !== userId && !clan.members?.includes(userId) && (
+            <p>You are not a member of this clan.</p>
+          )}
         </div>
-      ) : (
-        <form onSubmit={handleCreateClan}>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Clan Name" required />
-          <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" />
-          <button type="submit">Create Clan</button>
-        </form>
-      )}
-
-      <ul>
-        {clans.map(clan => (
-          <li key={clan.id}>
-            <h4>{clan.name}</h4>
-            <p>{clan.description}</p>
-            {!userClanId && !clan.members.includes(currentUser.uid) && (
-              <button onClick={() => handleJoinClan(clan.id)}>Join Clan</button>
-            )}
-            {userClanId === clan.id && <p>(You're a member)</p>}
-          </li>
-        ))}
-      </ul>
+      ))}
     </div>
   );
+}
+
+// You must implement this according to your backend or Firestore users collection
+async function getUserIdByEmail(email) {
+  // Example:
+  // const usersRef = collection(db, "users");
+  // const q = query(usersRef, where("email", "==", email));
+  // const snapshot = await getDocs(q);
+  // if (!snapshot.empty) return snapshot.docs[0].id;
+  return null;
 }
