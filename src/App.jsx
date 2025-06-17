@@ -7,12 +7,8 @@ import Dashboard from './pages/Dashboard';
 import Clans from './pages/Clans';
 import Challenges from './pages/Challenges';
 import { useAuth } from './context/AuthContext';
-import { auth } from '../src/firebase/firebase'; 
-// adjust path as needed depending on your file structure
 import ClanProfile from "./pages/ClanProfile";
 
-
-// Protects private routes
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
   return currentUser ? children : <Login />;
@@ -27,8 +23,7 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/clans" element={<PrivateRoute><Clans /></PrivateRoute>} />
-        <Route path="/clan/:clanId" element={<ClanProfile />} />
-        <Route path="/clans/:id" element={<PrivateRoute><Clans /></PrivateRoute>} />
+        <Route path="/clan/:clanId" element={<PrivateRoute><ClanProfile /></PrivateRoute>} />
         <Route path="/challenges" element={<PrivateRoute><Challenges /></PrivateRoute>} />
       </Route>
     </Routes>

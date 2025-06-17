@@ -180,7 +180,7 @@ export default function Clans() {
           )}
 
           <div style={{ marginTop: 10 }}>
-            <Link to={`/clans/${clan.id}`} style={{ color: "blue", textDecoration: "underline" }}>
+            <Link to={`/clan/${clan.id}`} style={{ color: "blue", textDecoration: "underline" }}>
               View Clan
             </Link>
           </div>
