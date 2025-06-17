@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/arena/static/css/main.eaf72a90.css",
-    "main.js": "/arena/static/js/main.b023ed4e.js",
+    "main.css": "/arena/static/css/main.d3485996.css",
+    "main.js": "/arena/static/js/main.2debfc04.js",
     "index.html": "/arena/index.html",
-    "main.eaf72a90.css.map": "/arena/static/css/main.eaf72a90.css.map",
-    "main.b023ed4e.js.map": "/arena/static/js/main.b023ed4e.js.map"
+    "main.d3485996.css.map": "/arena/static/css/main.d3485996.css.map",
+    "main.2debfc04.js.map": "/arena/static/js/main.2debfc04.js.map"
   },
   "entrypoints": [
-    "static/css/main.eaf72a90.css",
-    "static/js/main.b023ed4e.js"
+    "static/css/main.d3485996.css",
+    "static/js/main.2debfc04.js"
   ]
 }
