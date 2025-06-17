@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { 
-  collection, 
-  query, 
-  onSnapshot, 
-  addDoc, 
-  updateDoc, 
-  doc, 
-  arrayUnion, 
-  arrayRemove, 
-  deleteDoc 
+import { Link } from "react-router-dom";
+import {
+  collection,
+  query,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  doc,
+  arrayUnion,
+  arrayRemove,
+  deleteDoc
 } from "firebase/firestore";
 import { db, auth } from '../firebase/firebase';
 
@@ -17,7 +18,7 @@ export default function Clans() {
   const [newClanName, setNewClanName] = useState("");
   const [newClanDescription, setNewClanDescription] = useState("");
   const [userId, setUserId] = useState(null);
-  const [inviteEmail, setInviteEmail] = useState(""); // For inviting members
+  const [inviteEmail, setInviteEmail] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -91,7 +92,7 @@ export default function Clans() {
   }
 
   async function deleteClan(clanId) {
-    if (!window.confirm("Are you sure you want to delete this clan? This action cannot be undone.")) return;
+    if (!window.confirm("Are you sure you want to delete this clan?")) return;
 
     try {
       await deleteDoc(doc(db, "clans", clanId));
@@ -144,15 +145,13 @@ export default function Clans() {
               </button>
 
               <h4>Manage Members</h4>
-              <div>
-                <input
-                  type="email"
-                  placeholder="Email to invite"
-                  value={inviteEmail}
-                  onChange={e => setInviteEmail(e.target.value)}
-                />
-                <button onClick={() => inviteMember(clan.id)}>Invite</button>
-              </div>
+              <input
+                type="email"
+                placeholder="Email to invite"
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+              />
+              <button onClick={() => inviteMember(clan.id)}>Invite</button>
 
               <ul>
                 {clan.members?.map(memberId => (
@@ -179,18 +178,19 @@ export default function Clans() {
           {clan.ownerId !== userId && !clan.members?.includes(userId) && (
             <p>You are not a member of this clan.</p>
           )}
+
+          <div style={{ marginTop: 10 }}>
+            <Link to={`/clans/${clan.id}`} style={{ color: "blue", textDecoration: "underline" }}>
+              View Clan
+            </Link>
+          </div>
         </div>
       ))}
     </div>
   );
 }
 
-// You must implement this according to your backend or Firestore users collection
+// 🔧 Placeholder: update to fetch UID from Firestore users collection
 async function getUserIdByEmail(email) {
-  // Example:
-  // const usersRef = collection(db, "users");
-  // const q = query(usersRef, where("email", "==", email));
-  // const snapshot = await getDocs(q);
-  // if (!snapshot.empty) return snapshot.docs[0].id;
   return null;
 }
