@@ -1,9 +1,7 @@
-// src/firebase/firebase.js
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth'; // <-- add GoogleAuthProvider here
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDsVSyEza0XHKiTl5dEuR0U5aPvi6FlXZc",
   authDomain: "arena-c260d.firebaseapp.com",
@@ -13,11 +11,10 @@ const firebaseConfig = {
   appId: "1:457088191428:web:74eb0f9162174eaca43291"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize services
 const db = getFirestore(app);
 const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();  // <-- initialize provider here
 
-export { db, auth };
+export { db, auth, googleProvider };
