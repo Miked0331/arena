@@ -1,11 +1,11 @@
-// src/context/AuthContext.jsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from '../firebase/firebase';
-import { 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut 
+import { createContext, useContext, useState, useEffect } from 'react';
+import { auth, googleProvider } from '../firebase';
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  signInWithPopup
 } from 'firebase/auth';
 
 const AuthContext = createContext();
@@ -18,35 +18,37 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Listen for auth state changes
+  function signup(email, password) {
+    return createUserWithEmailAndPassword(auth, email, password);
+  }
+
+  function login(email, password) {
+    return signInWithEmailAndPassword(auth, email, password);
+  }
+
+  function logout() {
+    return signOut(auth);
+  }
+
+  function loginWithGoogle() {
+    return signInWithPopup(auth, googleProvider);
+  }
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
       setCurrentUser(user);
       setLoading(false);
     });
+
     return unsubscribe;
   }, []);
 
-  // Signup function
-  function signup(email, password) {
-    return createUserWithEmailAndPassword(auth, email, password);
-  }
-
-  // Login function
-  function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
-  }
-
-  // Logout function
-  function logout() {
-    return signOut(auth);
-  }
-
   const value = {
     currentUser,
-    signup,
     login,
-    logout
+    signup,
+    logout,
+    loginWithGoogle,
   };
 
   return (

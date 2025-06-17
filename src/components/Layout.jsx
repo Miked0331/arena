@@ -1,16 +1,28 @@
-import { Link, Outlet } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function Layout() {
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-red-600 text-white px-4 py-3 flex justify-center space-x-6 shadow-md">
-        <Link to="/" className="hover:underline">Home</Link>
-        <Link to="/dashboard" className="hover:underline">Dashboard</Link>
-        <Link to="/clans" className="hover:underline">Clans</Link>
-        <Link to="/clans/create" className="hover:underline">Create Clan</Link>
-      </nav>
+  const { currentUser, logout } = useAuth();
 
-      <main className="max-w-4xl mx-auto mt-8 px-4">
+  return (
+    <div>
+      <nav>
+        <Link to="/">Home</Link>
+        {!currentUser && (
+          <>
+            <Link to="/login">Login</Link>
+            <Link to="/signup">Signup</Link>
+          </>
+        )}
+        {currentUser && (
+          <>
+            <Link to="/dashboard">Dashboard</Link>
+            <Link to="/clans">Clans</Link>
+            <button onClick={logout}>Logout</button>
+          </>
+        )}
+      </nav>
+      <main>
         <Outlet />
       </main>
     </div>
