@@ -14,7 +14,7 @@ export default function ClanProfile() {
   useEffect(() => {
     const user = auth.currentUser;
     if (user) setUserId(user.uid);
-    
+
     async function fetchClan() {
       const docRef = doc(db, "clans", clanId);
       const docSnap = await getDoc(docRef);
@@ -29,6 +29,9 @@ export default function ClanProfile() {
 
     fetchClan();
   }, [clanId]);
+
+  const isOwner = clan?.ownerId === userId;
+  const isMember = clan?.members?.includes(userId);
 
   async function inviteMember() {
     if (!inviteEmail.trim()) return alert("Enter email to invite");
@@ -52,7 +55,6 @@ export default function ClanProfile() {
 
   async function removeMember(memberId) {
     if (!window.confirm("Remove this member?")) return;
-
     try {
       await updateDoc(doc(db, "clans", clan.id), {
         members: arrayRemove(memberId)
@@ -67,7 +69,56 @@ export default function ClanProfile() {
     }
   }
 
+  async function handleJoinRequest() {
+    try {
+      await updateDoc(doc(db, "clans", clan.id), {
+        joinRequests: arrayUnion(userId)
+      });
+      alert("Request sent!");
+      setClan(prev => ({
+        ...prev,
+        joinRequests: [...(prev.joinRequests || []), userId]
+      }));
+    } catch (error) {
+      console.error("Join request error:", error);
+      alert("Could not send join request");
+    }
+  }
+
+  async function acceptRequest(uid) {
+    try {
+      await updateDoc(doc(db, "clans", clan.id), {
+        members: arrayUnion(uid),
+        joinRequests: arrayRemove(uid)
+      });
+      setClan(prev => ({
+        ...prev,
+        members: [...(prev.members || []), uid],
+        joinRequests: prev.joinRequests.filter(id => id !== uid)
+      }));
+    } catch (error) {
+      console.error("Accept request error:", error);
+      alert("Failed to accept");
+    }
+  }
+
+  async function declineRequest(uid) {
+    try {
+      await updateDoc(doc(db, "clans", clan.id), {
+        joinRequests: arrayRemove(uid)
+      });
+      setClan(prev => ({
+        ...prev,
+        joinRequests: prev.joinRequests.filter(id => id !== uid)
+      }));
+    } catch (error) {
+      console.error("Decline request error:", error);
+      alert("Failed to decline");
+    }
+  }
+
   if (loading) return <p>Loading...</p>;
+  if (!clan) return null;
 
   return (
     <div style={{ padding: 20, maxWidth: 800, margin: "auto" }}>
@@ -75,7 +126,13 @@ export default function ClanProfile() {
       <p>{clan.description}</p>
       <p><strong>Members:</strong> {clan.members?.length || 0}</p>
 
-      {clan.ownerId === userId && (
+      {/* Request to join if not owner or member */}
+      {!isOwner && !isMember && (
+        <button onClick={handleJoinRequest}>Request to Join</button>
+      )}
+
+      {/* Show invite, member list, and join requests for owner */}
+      {isOwner && (
         <>
           <h3>Invite Members</h3>
           <input
@@ -88,7 +145,7 @@ export default function ClanProfile() {
 
           <h3>Current Members</h3>
           <ul>
-            {clan.members.map(memberId => (
+            {clan.members?.map(memberId => (
               <li key={memberId}>
                 {memberId}
                 {memberId !== userId && (
@@ -99,13 +156,29 @@ export default function ClanProfile() {
               </li>
             ))}
           </ul>
+
+          {/* New: join requests */}
+          {clan.joinRequests?.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <h3>Join Requests</h3>
+              <ul>
+                {clan.joinRequests.map((uid) => (
+                  <li key={uid}>
+                    {uid}
+                    <button onClick={() => acceptRequest(uid)} style={{ marginLeft: 10 }}>Accept</button>
+                    <button onClick={() => declineRequest(uid)} style={{ marginLeft: 10 }}>Decline</button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </>
       )}
     </div>
   );
 }
 
-// Placeholder - replace with your own implementation
+// 🔧 Replace with your own logic or Firestore "users" collection query
 async function getUserIdByEmail(email) {
-  return null; // You’ll need to query a "users" collection
+  return null;
 }
