@@ -18,11 +18,13 @@ export default function Login() {
       setError('');
       setLoading(true);
       await login(emailRef.current.value, passwordRef.current.value);
-      navigate('/'); // Redirect after login
-    } catch {
-      setError('Failed to log in');
+      navigate('/');
+    } catch (err) {
+      console.error("Login error:", err.code, err.message); // ✅ Add this
+      setError(err.message || 'Failed to log in'); // ✅ Show real error
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
