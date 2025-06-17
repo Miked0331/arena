@@ -2,6 +2,9 @@
 import React, { useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import '../components/Login.css';
+
+
 
 export default function Login() {
   const emailRef = useRef();
@@ -37,18 +40,19 @@ export default function Login() {
   }
 
   return (
-    <div>
-      <h2>Log In</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <input type="email" placeholder="Email" ref={emailRef} required />
-        <input type="password" placeholder="Password" ref={passwordRef} required />
-        <button disabled={loading} type="submit">Log In</button>
-      </form>
-      <hr />
-      <button onClick={handleGoogleLogin} disabled={loading}>
-        Log In with Google
-      </button>
-    </div>
-  );
+  <div className="login-container">
+    <h2>Log In</h2>
+    {error && <p className="error-message">{error}</p>}
+    <form onSubmit={handleSubmit}>
+      <input type="email" placeholder="Email" ref={emailRef} required />
+      <input type="password" placeholder="Password" ref={passwordRef} required />
+      <button disabled={loading} type="submit">Log In</button>
+    </form>
+    <hr />
+    <button onClick={handleGoogleLogin} disabled={loading}>
+      Log In with Google
+    </button>
+  </div>
+);
+
 }
