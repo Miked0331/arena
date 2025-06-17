@@ -1,3 +1,4 @@
+// top same as before
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
@@ -117,56 +118,88 @@ export default function ClanProfile() {
     }
   }
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p className="text-center mt-10">Loading...</p>;
   if (!clan) return null;
 
   return (
-    <div style={{ padding: 20, maxWidth: 800, margin: "auto" }}>
-      <h1>{clan.name}</h1>
-      <p>{clan.description}</p>
-      <p><strong>Members:</strong> {clan.members?.length || 0}</p>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-2">{clan.name}</h1>
+      <p className="text-gray-600 mb-4">{clan.description}</p>
+      <p className="text-sm text-gray-500 mb-6">Members: {clan.members?.length || 0}</p>
 
-      {/* Request to join if not owner or member */}
       {!isOwner && !isMember && (
-        <button onClick={handleJoinRequest}>Request to Join</button>
+        <button
+          onClick={handleJoinRequest}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Request to Join
+        </button>
       )}
 
-      {/* Show invite, member list, and join requests for owner */}
       {isOwner && (
         <>
-          <h3>Invite Members</h3>
-          <input
-            type="email"
-            value={inviteEmail}
-            onChange={e => setInviteEmail(e.target.value)}
-            placeholder="User email"
-          />
-          <button onClick={inviteMember}>Invite</button>
+          {/* Invite Section */}
+          <div className="bg-white shadow rounded p-4 mb-6">
+            <h3 className="text-xl font-semibold mb-2">Invite Members</h3>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+                placeholder="User email"
+                className="border px-3 py-2 rounded w-full"
+              />
+              <button
+                onClick={inviteMember}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                Invite
+              </button>
+            </div>
+          </div>
 
-          <h3>Current Members</h3>
-          <ul>
-            {clan.members?.map(memberId => (
-              <li key={memberId}>
-                {memberId}
-                {memberId !== userId && (
-                  <button onClick={() => removeMember(memberId)} style={{ marginLeft: 10 }}>
-                    Remove
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+          {/* Members List */}
+          <div className="bg-white shadow rounded p-4 mb-6">
+            <h3 className="text-xl font-semibold mb-2">Current Members</h3>
+            <ul className="space-y-2">
+              {clan.members?.map(memberId => (
+                <li key={memberId} className="flex justify-between items-center border-b pb-1">
+                  <span>{memberId}</span>
+                  {memberId !== userId && (
+                    <button
+                      onClick={() => removeMember(memberId)}
+                      className="text-red-500 hover:underline text-sm"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          {/* New: join requests */}
+          {/* Join Requests */}
           {clan.joinRequests?.length > 0 && (
-            <div style={{ marginTop: 20 }}>
-              <h3>Join Requests</h3>
-              <ul>
+            <div className="bg-white shadow rounded p-4 mb-6">
+              <h3 className="text-xl font-semibold mb-2">Join Requests</h3>
+              <ul className="space-y-2">
                 {clan.joinRequests.map((uid) => (
-                  <li key={uid}>
-                    {uid}
-                    <button onClick={() => acceptRequest(uid)} style={{ marginLeft: 10 }}>Accept</button>
-                    <button onClick={() => declineRequest(uid)} style={{ marginLeft: 10 }}>Decline</button>
+                  <li key={uid} className="flex justify-between items-center border-b pb-1">
+                    <span>{uid}</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => acceptRequest(uid)}
+                        className="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => declineRequest(uid)}
+                        className="bg-gray-300 text-black px-2 py-1 rounded text-sm hover:bg-gray-400"
+                      >
+                        Decline
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -178,7 +211,7 @@ export default function ClanProfile() {
   );
 }
 
-// 🔧 Replace with your own logic or Firestore "users" collection query
+// Still stubbed
 async function getUserIdByEmail(email) {
   return null;
 }
