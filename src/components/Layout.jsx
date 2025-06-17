@@ -21,6 +21,7 @@ export default function Layout() {
           <>
             <Link to="/dashboard">Dashboard</Link>
             <Link to="/clans">Clans</Link>
+            <Link to="/challenges">Challenges</Link>
             <button onClick={logout}>Logout</button>
           </>
         )}
