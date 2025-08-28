@@ -1,4 +1,3 @@
-// src/pages/ClanProfile.jsx
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -35,13 +34,11 @@ export default function ClanProfile() {
   const [userId, setUserId] = useState(null);
   const [inviteEmail, setInviteEmail] = useState("");
 
-  // Get current user
   useEffect(() => {
     const user = auth.currentUser;
     if (user) setUserId(user.uid);
   }, []);
 
-  // Fetch clan info
   useEffect(() => {
     const docRef = doc(db, "clans", clanId);
     const unsubscribe = onSnapshot(docRef, snapshot => {
@@ -106,48 +103,47 @@ export default function ClanProfile() {
     }
   }
 
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
-  if (!clan) return <p className="text-center mt-10">Clan not found</p>;
+  if (loading) return <p className="text-center mt-10 text-gray-600">Loading...</p>;
+  if (!clan) return <p className="text-center mt-10 text-gray-600">Clan not found</p>;
 
   return (
     <div className="max-w-3xl mx-auto p-5">
       <h1 className="text-3xl font-bold mb-3">{clan.name}</h1>
       <p className="text-gray-700 mb-3">{clan.description || "No description"}</p>
-      <p className="mb-3">
-        <strong>Members:</strong> {clan.members?.length || 0}
+      <p className="mb-3 font-medium">
+        Members: {clan.members?.length || 0}
       </p>
 
       {/* Owner Section */}
       {clan.ownerId === userId && (
-        <div className="mb-4 p-4 bg-gray-50 rounded shadow">
-          <h2 className="font-semibold mb-2">Invite Members</h2>
-          <div className="flex gap-2 mb-2">
+        <div className="mb-6 p-4 bg-gray-50 rounded shadow">
+          <h2 className="font-semibold text-lg mb-2">Invite Members</h2>
+          <div className="flex gap-2 mb-3">
             <input
               type="email"
               placeholder="Email to invite"
               value={inviteEmail}
               onChange={e => setInviteEmail(e.target.value)}
-              className="flex-1 p-2 border rounded"
+              className="flex-1 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-400"
             />
             <button
-              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+              className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 transition"
               onClick={inviteMember}
             >
               Invite
             </button>
           </div>
-
           <JoinRequests clanId={clan.id} />
         </div>
       )}
 
       {/* Members List */}
       {clan.members?.length > 0 && (
-        <div className="mb-4 p-4 bg-white rounded shadow">
+        <div className="mb-6 p-4 bg-white rounded shadow">
           <h2 className="font-semibold mb-2">Members</h2>
           <ul>
             {clan.members.map(memberId => (
-              <li key={memberId} className="flex justify-between py-1">
+              <li key={memberId} className="flex justify-between items-center py-1 border-b">
                 <span>{memberId}</span>
                 {clan.ownerId === userId && memberId !== userId && (
                   <button
@@ -163,10 +159,10 @@ export default function ClanProfile() {
         </div>
       )}
 
-      {/* Non-members can request to join */}
+      {/* Request to Join */}
       {clan.ownerId !== userId && !clan.members?.includes(userId) && (
         <button
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
           onClick={requestToJoin}
         >
           Request to Join
@@ -211,22 +207,24 @@ function JoinRequests({ clanId }) {
   if (!requests.length) return <p className="mt-2 text-gray-600">No pending requests.</p>;
 
   return (
-    <ul className="mt-2">
+    <ul className="mt-2 space-y-2">
       {requests.map(req => (
-        <li key={req.id} className="flex items-center gap-2 mt-1">
+        <li key={req.id} className="flex items-center gap-2 justify-between p-2 border rounded">
           <span>{req.userId}</span>
-          <button
-            className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
-            onClick={() => approveRequest(req.id, req.userId)}
-          >
-            Approve
-          </button>
-          <button
-            className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
-            onClick={() => rejectRequest(req.id)}
-          >
-            Reject
-          </button>
+          <div className="flex gap-2">
+            <button
+              className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 transition"
+              onClick={() => approveRequest(req.id, req.userId)}
+            >
+              Approve
+            </button>
+            <button
+              className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 transition"
+              onClick={() => rejectRequest(req.id)}
+            >
+              Reject
+            </button>
+          </div>
         </li>
       ))}
     </ul>

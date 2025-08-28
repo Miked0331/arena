@@ -91,37 +91,94 @@ export default function Clans() {
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: "auto", padding: 20 }}>
-      <h1>Clans</h1>
-      <form onSubmit={handleCreateClan}>
-        <input type="text" placeholder="Clan Name" value={newClanName} onChange={e => setNewClanName(e.target.value)} required />
-        <textarea placeholder="Description" value={newClanDescription} onChange={e => setNewClanDescription(e.target.value)} />
-        <button type="submit">Create Clan</button>
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-4xl font-bold mb-6 text-center">Clans</h1>
+
+      <form onSubmit={handleCreateClan} className="mb-8 bg-white shadow-md rounded p-4">
+        <h2 className="text-2xl font-semibold mb-3">Create a New Clan</h2>
+        <input
+          type="text"
+          placeholder="Clan Name"
+          value={newClanName}
+          onChange={e => setNewClanName(e.target.value)}
+          className="w-full mb-2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+          required
+        />
+        <textarea
+          placeholder="Description (optional)"
+          value={newClanDescription}
+          onChange={e => setNewClanDescription(e.target.value)}
+          className="w-full mb-2 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+        >
+          Create Clan
+        </button>
       </form>
 
-      {loading && <p>Loading...</p>}
-      {!loading && clans.length === 0 && <p>No clans yet</p>}
+      {loading && <p className="text-center text-gray-600">Loading clans...</p>}
+      {!loading && clans.length === 0 && <p className="text-center text-gray-600">No clans yet</p>}
 
-      {clans.map(clan => (
-        <div key={clan.id} style={{ border: "1px solid #ccc", padding: 10, margin: 10 }}>
-          <h3>{clan.name}</h3>
-          <p>{clan.description || "No description"}</p>
-          <p>Members: {clan.members?.length || 0}</p>
+      <div className="grid gap-6">
+        {clans.map(clan => (
+          <div key={clan.id} className="bg-white shadow-md rounded p-4 border border-gray-200">
+            <h3 className="text-xl font-bold">{clan.name}</h3>
+            <p className="text-gray-700 mb-2">{clan.description || "No description"}</p>
+            <p className="text-gray-600 mb-3"><strong>Members:</strong> {clan.members?.length || 0}</p>
 
-          {clan.ownerId === userId && (
-            <>
-              <button onClick={() => deleteClan(clan.id)}>Delete</button>
-              <input placeholder="Email to invite" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} />
-              <button onClick={() => inviteMember(clan.id)}>Invite</button>
-              <ul>
-                {clan.members?.map(m => <li key={m}>{m} <button onClick={() => removeMember(clan.id, m)}>Remove</button></li>)}
-              </ul>
-            </>
-          )}
+            {clan.ownerId === userId && (
+              <div className="mb-3">
+                <button
+                  onClick={() => deleteClan(clan.id)}
+                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 mr-2"
+                >
+                  Delete
+                </button>
 
-          <Link to={`/clan/${clan.id}`}>View Clan</Link>
-        </div>
-      ))}
+                <div className="flex gap-2 mt-2">
+                  <input
+                    placeholder="Email to invite"
+                    value={inviteEmail}
+                    onChange={e => setInviteEmail(e.target.value)}
+                    className="flex-1 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                  <button
+                    onClick={() => inviteMember(clan.id)}
+                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                  >
+                    Invite
+                  </button>
+                </div>
+
+                <ul className="mt-2 space-y-1">
+                  {clan.members?.map(m => (
+                    <li key={m} className="flex justify-between items-center border-b py-1">
+                      <span>{m}</span>
+                      {m !== userId && (
+                        <button
+                          onClick={() => removeMember(clan.id, m)}
+                          className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <Link
+              to={`/clan/${clan.id}`}
+              className="text-blue-600 hover:underline"
+            >
+              View Clan
+            </Link>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
