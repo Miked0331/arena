@@ -8,8 +8,7 @@ export default async function getUserIdByEmail(email) {
   const querySnapshot = await getDocs(q);
 
   if (!querySnapshot.empty) {
-    const userDoc = querySnapshot.docs[0];
-    return userDoc.id; // this is the uid
+    return querySnapshot.docs[0].id; // UID of the user
   }
-  return null; // user not found
+  return null;
 }
