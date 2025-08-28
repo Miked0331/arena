@@ -2,8 +2,8 @@
 import React, { useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase/firebase'; // Make sure this points to your Firebase setup
 
 export default function Signup() {
   const emailRef = useRef();
@@ -24,16 +24,21 @@ export default function Signup() {
     try {
       setError('');
       setLoading(true);
-      const userCredential = await signup(emailRef.current.value, passwordRef.current.value);
+
+      // Create user in Firebase Auth
+      const userCredential = await signup(
+        emailRef.current.value,
+        passwordRef.current.value
+      );
       const user = userCredential.user;
 
-      // Add the user to Firestore
+      // Add user to Firestore `users` collection
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
-        displayName: user.displayName || ''
+        createdAt: new Date()
       });
 
-      navigate('/'); // Redirect to homepage or dashboard after signup
+      navigate('/'); // Redirect after signup
     } catch (err) {
       console.error(err);
       setError('Failed to create an account');
@@ -42,14 +47,38 @@ export default function Signup() {
   }
 
   return (
-    <div>
-      <h2>Sign Up</h2>
-      {error && <p style={{color: 'red'}}>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <input type="email" placeholder="Email" ref={emailRef} required />
-        <input type="password" placeholder="Password" ref={passwordRef} required />
-        <input type="password" placeholder="Confirm Password" ref={passwordConfirmRef} required />
-        <button disabled={loading} type="submit">Sign Up</button>
+    <div className="max-w-md mx-auto mt-10 p-5 border rounded shadow">
+      <h2 className="text-2xl font-bold mb-4">Sign Up</h2>
+      {error && <p className="text-red-600 mb-2">{error}</p>}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <input
+          type="email"
+          placeholder="Email"
+          ref={emailRef}
+          required
+          className="p-2 border rounded"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          ref={passwordRef}
+          required
+          className="p-2 border rounded"
+        />
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          ref={passwordConfirmRef}
+          required
+          className="p-2 border rounded"
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+        >
+          Sign Up
+        </button>
       </form>
     </div>
   );
