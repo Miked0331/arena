@@ -12,6 +12,7 @@ import {
   deleteDoc
 } from "firebase/firestore";
 import { db, auth } from '../firebase/firebase';
+import { getUserIdByEmail } from "../firebase/userUtils";
 
 export default function Clans() {
   const [clans, setClans] = useState([]);
@@ -79,12 +80,9 @@ export default function Clans() {
 
   async function removeMember(clanId, memberId) {
     if (!window.confirm("Remove this member?")) return;
-
     try {
       const clanRef = doc(db, "clans", clanId);
-      await updateDoc(clanRef, {
-        members: arrayRemove(memberId)
-      });
+      await updateDoc(clanRef, { members: arrayRemove(memberId) });
     } catch (error) {
       console.error("Remove member error:", error);
       alert("Failed to remove member.");
@@ -93,7 +91,6 @@ export default function Clans() {
 
   async function deleteClan(clanId) {
     if (!window.confirm("Are you sure you want to delete this clan?")) return;
-
     try {
       await deleteDoc(doc(db, "clans", clanId));
     } catch (error) {
@@ -105,7 +102,6 @@ export default function Clans() {
   return (
     <div style={{ maxWidth: 800, margin: "auto", padding: 20 }}>
       <h1>Clans</h1>
-
       <form onSubmit={handleCreateClan} style={{ marginBottom: 30 }}>
         <h2>Create a New Clan</h2>
         <input
@@ -136,15 +132,8 @@ export default function Clans() {
           <p><strong>Members:</strong> {clan.members?.length || 0}</p>
 
           {clan.ownerId === userId && (
-            <>
-              <button
-                style={{ background: "red", color: "white", marginBottom: 10 }}
-                onClick={() => deleteClan(clan.id)}
-              >
-                Delete Clan
-              </button>
-
-              <h4>Manage Members</h4>
+            <div>
+              <button style={{ background: "red", color: "white", marginBottom: 10 }} onClick={() => deleteClan(clan.id)}>Delete Clan</button>
               <input
                 type="email"
                 placeholder="Email to invite"
@@ -152,45 +141,14 @@ export default function Clans() {
                 onChange={e => setInviteEmail(e.target.value)}
               />
               <button onClick={() => inviteMember(clan.id)}>Invite</button>
-
-              <ul>
-                {clan.members?.map(memberId => (
-                  <li key={memberId} style={{ marginTop: 5 }}>
-                    {memberId}
-                    {memberId !== userId && (
-                      <button
-                        style={{ marginLeft: 10 }}
-                        onClick={() => removeMember(clan.id, memberId)}
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </>
+            </div>
           )}
 
-          {clan.ownerId !== userId && clan.members?.includes(userId) && (
-            <p>You are a member of this clan.</p>
-          )}
-
-          {clan.ownerId !== userId && !clan.members?.includes(userId) && (
-            <p>You are not a member of this clan.</p>
-          )}
-
-          <div style={{ marginTop: 10 }}>
-            <Link to={`/clan/${clan.id}`} style={{ color: "blue", textDecoration: "underline" }}>
-              View Clan
-            </Link>
-          </div>
+          <Link to={`/clan/${clan.id}`} style={{ color: "blue", textDecoration: "underline", marginTop: 10, display: "inline-block" }}>
+            View Clan
+          </Link>
         </div>
       ))}
     </div>
   );
-}
-
-// 🔧 Placeholder: update to fetch UID from Firestore users collection
-async function getUserIdByEmail(email) {
-  return null;
 }
