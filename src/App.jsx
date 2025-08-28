@@ -9,6 +9,9 @@ import Challenges from './pages/Challenges';
 import { useAuth } from './context/AuthContext';
 import ClanProfile from "./pages/ClanProfile";
 
+<h1>Hello Arena v2</h1>
+
+
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
   return currentUser ? children : <Login />;
