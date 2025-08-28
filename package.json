@@ -24,7 +24,8 @@
     "predeploy": "npm run build && npm run postbuild",
     "deploy": "gh-pages -d build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy:all": "git add . && git commit -m \"deploy\" && git push origin main && npm run deploy"
   },
   "browserslist": {
     "production": [
