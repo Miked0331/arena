@@ -9,7 +9,7 @@ import {
   collection,
   addDoc,
   deleteDoc,
-  getDocs,
+  getDoc
 } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import { useAuth } from "../context/AuthContext";
@@ -21,9 +21,9 @@ export default function ClanProfile() {
 
   const [clan, setClan] = useState(null);
   const [requests, setRequests] = useState([]);
-  const [userEmails, setUserEmails] = useState({}); // UID → Email lookup
+  const [userEmails, setUserEmails] = useState({}); // UID → email map
 
-  // Live update of clan + requests
+  // Listen to clan & join requests
   useEffect(() => {
     if (!clanId) return;
 
@@ -48,23 +48,26 @@ export default function ClanProfile() {
   useEffect(() => {
     const fetchEmails = async () => {
       if (!clan) return;
+
       const uids = [...(clan.members || []), ...(requests.map(r => r.userId))];
       const uniqueUids = [...new Set(uids)];
+      let emailsMap = {};
 
-      let newMap = {};
-      for (let uid of uniqueUids) {
+      for (const uid of uniqueUids) {
         try {
-          const snap = await getDocs(collection(db, "users"));
-          snap.forEach((doc) => {
-            if (doc.id === uid) {
-              newMap[uid] = doc.data().email || uid;
-            }
-          });
-        } catch (e) {
-          console.error("Error fetching user emails", e);
+          const userSnap = await getDoc(doc(db, "users", uid));
+          if (userSnap.exists()) {
+            emailsMap[uid] = userSnap.data().email || uid;
+          } else {
+            emailsMap[uid] = uid;
+          }
+        } catch (err) {
+          console.error("Failed to fetch user email:", err);
+          emailsMap[uid] = uid;
         }
       }
-      setUserEmails(newMap);
+
+      setUserEmails(emailsMap);
     };
 
     fetchEmails();
@@ -72,16 +75,14 @@ export default function ClanProfile() {
 
   if (!clan) return <p className="p-4">Clan not found</p>;
 
+  // Member actions
   const requestToJoin = async () => {
-    await addDoc(collection(db, "clans", clan.id, "joinRequests"), {
-      userId,
-    });
+    if (!userId) return alert("You must be logged in");
+    await addDoc(collection(db, "clans", clan.id, "joinRequests"), { userId });
   };
 
   const approveRequest = async (reqId, requesterId) => {
-    await updateDoc(doc(db, "clans", clan.id), {
-      members: arrayUnion(requesterId),
-    });
+    await updateDoc(doc(db, "clans", clan.id), { members: arrayUnion(requesterId) });
     await deleteDoc(doc(db, "clans", clan.id, "joinRequests", reqId));
   };
 
@@ -90,34 +91,28 @@ export default function ClanProfile() {
   };
 
   const removeMember = async (memberId) => {
-    await updateDoc(doc(db, "clans", clan.id), {
-      members: arrayRemove(memberId),
-    });
+    await updateDoc(doc(db, "clans", clan.id), { members: arrayRemove(memberId) });
   };
 
   const inviteMember = async () => {
     const email = prompt("Enter email to invite:");
     if (!email) return;
 
-    const snap = await getDocs(collection(db, "users"));
-    let userFound = null;
-    snap.forEach((doc) => {
-      if (doc.data().email === email) {
-        userFound = doc.id;
-      }
+    const usersSnap = await getDocs(collection(db, "users"));
+    let foundId = null;
+    usersSnap.forEach((doc) => {
+      if (doc.data().email === email) foundId = doc.id;
     });
 
-    if (userFound) {
-      await updateDoc(doc(db, "clans", clan.id), {
-        members: arrayUnion(userFound),
-      });
+    if (foundId) {
+      await updateDoc(doc(db, "clans", clan.id), { members: arrayUnion(foundId) });
     } else {
       alert("User not found");
     }
   };
 
   const deleteClan = async () => {
-    if (window.confirm("Are you sure you want to delete this clan?")) {
+    if (window.confirm("Delete this clan?")) {
       await deleteDoc(doc(db, "clans", clan.id));
     }
   };
@@ -127,89 +122,56 @@ export default function ClanProfile() {
       <h1 className="text-2xl font-bold">{clan.name}</h1>
       <p className="text-gray-700">{clan.description}</p>
 
-      {/* Request to Join */}
+      {/* Request to join */}
       {clan.ownerId !== userId && !clan.members?.includes(userId) && (
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition mt-3"
-          onClick={requestToJoin}
-        >
+        <button className="bg-blue-600 text-white px-4 py-2 rounded mt-3 hover:bg-blue-700" onClick={requestToJoin}>
           Request to Join
         </button>
       )}
 
-      {/* Leave Clan */}
+      {/* Leave clan */}
       {clan.ownerId !== userId && clan.members?.includes(userId) && (
-        <button
-          className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition mt-3"
-          onClick={() => removeMember(userId)}
-        >
+        <button className="bg-yellow-500 text-white px-4 py-2 rounded mt-3 hover:bg-yellow-600" onClick={() => removeMember(userId)}>
           Leave Clan
         </button>
       )}
 
-      {/* Owner Controls */}
+      {/* Owner controls */}
       {clan.ownerId === userId && (
         <>
-          <button
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition mt-3"
-            onClick={inviteMember}
-          >
+          <button className="bg-green-600 text-white px-4 py-2 rounded mt-3 hover:bg-green-700" onClick={inviteMember}>
             Invite Member
           </button>
-          <button
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition mt-3 ml-3"
-            onClick={deleteClan}
-          >
+          <button className="bg-red-600 text-white px-4 py-2 rounded mt-3 ml-3 hover:bg-red-700" onClick={deleteClan}>
             Delete Clan
           </button>
         </>
       )}
 
-      {/* Members */}
+      {/* Members list */}
       <h2 className="text-xl font-semibold mt-6">Members</h2>
       <ul className="space-y-2 mt-2">
         {clan.members?.map((m) => (
-          <li
-            key={m}
-            className="flex justify-between items-center bg-gray-100 p-2 rounded"
-          >
+          <li key={m} className="flex justify-between bg-gray-100 p-2 rounded">
             <span>{userEmails[m] || m}</span>
             {clan.ownerId === userId && m !== userId && (
-              <button
-                className="text-red-600 hover:underline"
-                onClick={() => removeMember(m)}
-              >
-                Remove
-              </button>
+              <button className="text-red-600 hover:underline" onClick={() => removeMember(m)}>Remove</button>
             )}
           </li>
         ))}
       </ul>
 
-      {/* Join Requests */}
+      {/* Join requests */}
       {clan.ownerId === userId && (
         <>
           <h2 className="text-xl font-semibold mt-6">Join Requests</h2>
           <ul className="space-y-2 mt-2">
             {requests.map((r) => (
-              <li
-                key={r.id}
-                className="flex justify-between items-center bg-gray-100 p-2 rounded"
-              >
+              <li key={r.id} className="flex justify-between bg-gray-100 p-2 rounded">
                 <span>{userEmails[r.userId] || r.userId}</span>
                 <div>
-                  <button
-                    className="bg-green-500 text-white px-3 py-1 rounded mr-2 hover:bg-green-600"
-                    onClick={() => approveRequest(r.id, r.userId)}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                    onClick={() => rejectRequest(r.id)}
-                  >
-                    Reject
-                  </button>
+                  <button className="bg-green-500 text-white px-3 py-1 mr-2 rounded hover:bg-green-600" onClick={() => approveRequest(r.id, r.userId)}>Approve</button>
+                  <button className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" onClick={() => rejectRequest(r.id)}>Reject</button>
                 </div>
               </li>
             ))}
