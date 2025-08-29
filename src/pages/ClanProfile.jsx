@@ -9,9 +9,7 @@ import {
   collection,
   addDoc,
   deleteDoc,
-  getDocs,
-  query,
-  where
+  getDoc
 } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import { useAuth } from "../context/AuthContext";
@@ -23,9 +21,9 @@ export default function ClanProfile() {
 
   const [clan, setClan] = useState(null);
   const [requests, setRequests] = useState([]);
-  const [userEmails, setUserEmails] = useState({}); // UID → email map
+  const [userEmails, setUserEmails] = useState({}); // cached emails
 
-  // Listen to clan & join requests
+  // Firestore listeners for clan + join requests
   useEffect(() => {
     if (!clanId) return;
 
@@ -36,7 +34,7 @@ export default function ClanProfile() {
     const unsubRequests = onSnapshot(
       collection(db, "clans", clanId, "joinRequests"),
       (snap) => {
-        setRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       }
     );
 
@@ -46,34 +44,24 @@ export default function ClanProfile() {
     };
   }, [clanId]);
 
-  // Fetch emails for members + join requests efficiently
+  // Function to fetch a single user's email (cached)
+  const fetchUserEmail = async (uid) => {
+    if (userEmails[uid]) return userEmails[uid]; // already cached
+    try {
+      const userSnap = await getDoc(doc(db, "users", uid));
+      const email = userSnap.exists() ? userSnap.data().email : uid;
+      setUserEmails(prev => ({ ...prev, [uid]: email }));
+      return email;
+    } catch {
+      setUserEmails(prev => ({ ...prev, [uid]: uid }));
+      return uid;
+    }
+  };
+
+  // Pre-fetch emails for all members + requests
   useEffect(() => {
-    const fetchEmails = async () => {
-      if (!clan) return;
-      const uids = [...(clan.members || []), ...requests.map(r => r.userId)];
-      const uniqueUids = [...new Set(uids)];
-      if (uniqueUids.length === 0) return;
-
-      let emailsMap = {};
-
-      // Firestore allows max 10 'in' filters, so batch if needed
-      const batches = [];
-      while (uniqueUids.length) {
-        batches.push(uniqueUids.splice(0, 10));
-      }
-
-      for (let batch of batches) {
-        const q = query(collection(db, "users"), where("__name__", "in", batch));
-        const snap = await getDocs(q);
-        snap.forEach(doc => {
-          emailsMap[doc.id] = doc.data().email || doc.id;
-        });
-      }
-
-      setUserEmails(emailsMap);
-    };
-
-    fetchEmails();
+    const uids = [...(clan?.members || []), ...requests.map(r => r.userId)];
+    uids.forEach(fetchUserEmail);
   }, [clan, requests]);
 
   if (!clan) return <p className="p-4">Clan not found</p>;
@@ -96,23 +84,6 @@ export default function ClanProfile() {
     await updateDoc(doc(db, "clans", clan.id), { members: arrayRemove(memberId) });
   };
 
-  const inviteMember = async () => {
-    const email = prompt("Enter email to invite:");
-    if (!email) return;
-
-    const usersSnap = await getDocs(collection(db, "users"));
-    let foundId = null;
-    usersSnap.forEach((doc) => {
-      if (doc.data().email === email) foundId = doc.id;
-    });
-
-    if (foundId) {
-      await updateDoc(doc(db, "clans", clan.id), { members: arrayUnion(foundId) });
-    } else {
-      alert("User not found");
-    }
-  };
-
   const deleteClan = async () => {
     if (window.confirm("Delete this clan?")) {
       await deleteDoc(doc(db, "clans", clan.id));
@@ -122,29 +93,33 @@ export default function ClanProfile() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold">{clan.name}</h1>
-      <p className="text-gray-700">{clan.description}</p>
+      <p className="text-gray-700">{clan.description || "No description"}</p>
 
       {clan.ownerId !== userId && !clan.members?.includes(userId) && (
-        <button className="bg-blue-600 text-white px-4 py-2 rounded mt-3 hover:bg-blue-700" onClick={requestToJoin}>
+        <button
+          className="bg-blue-600 text-white px-4 py-2 rounded mt-3 hover:bg-blue-700"
+          onClick={requestToJoin}
+        >
           Request to Join
         </button>
       )}
 
       {clan.ownerId !== userId && clan.members?.includes(userId) && (
-        <button className="bg-yellow-500 text-white px-4 py-2 rounded mt-3 hover:bg-yellow-600" onClick={() => removeMember(userId)}>
+        <button
+          className="bg-yellow-500 text-white px-4 py-2 rounded mt-3 hover:bg-yellow-600"
+          onClick={() => removeMember(userId)}
+        >
           Leave Clan
         </button>
       )}
 
       {clan.ownerId === userId && (
-        <>
-          <button className="bg-green-600 text-white px-4 py-2 rounded mt-3 hover:bg-green-700" onClick={inviteMember}>
-            Invite Member
-          </button>
-          <button className="bg-red-600 text-white px-4 py-2 rounded mt-3 ml-3 hover:bg-red-700" onClick={deleteClan}>
-            Delete Clan
-          </button>
-        </>
+        <button
+          className="bg-red-600 text-white px-4 py-2 rounded mt-3 hover:bg-red-700"
+          onClick={deleteClan}
+        >
+          Delete Clan
+        </button>
       )}
 
       <h2 className="text-xl font-semibold mt-6">Members</h2>
@@ -167,8 +142,18 @@ export default function ClanProfile() {
               <li key={r.id} className="flex justify-between bg-gray-100 p-2 rounded">
                 <span>{userEmails[r.userId] || r.userId}</span>
                 <div>
-                  <button className="bg-green-500 text-white px-3 py-1 mr-2 rounded hover:bg-green-600" onClick={() => approveRequest(r.id, r.userId)}>Approve</button>
-                  <button className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" onClick={() => rejectRequest(r.id)}>Reject</button>
+                  <button
+                    className="bg-green-500 text-white px-3 py-1 mr-2 rounded hover:bg-green-600"
+                    onClick={() => approveRequest(r.id, r.userId)}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                    onClick={() => rejectRequest(r.id)}
+                  >
+                    Reject
+                  </button>
                 </div>
               </li>
             ))}

@@ -13,15 +13,13 @@ import {
   getDoc
 } from "firebase/firestore";
 import { db, auth } from '../firebase/firebase';
-import getUserIdByEmail from "../firebase/getUserIdByEmail";
 
 export default function Clans() {
   const [clans, setClans] = useState([]);
   const [newClanName, setNewClanName] = useState("");
   const [newClanDescription, setNewClanDescription] = useState("");
   const [userId, setUserId] = useState(null);
-  const [inviteEmails, setInviteEmails] = useState({}); // map: clanId -> email
-  const [userEmails, setUserEmails] = useState({}); // UID -> email map
+  const [userEmails, setUserEmails] = useState({}); // UID → email map
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,21 +71,6 @@ export default function Clans() {
     } catch (error) {
       console.error(error);
       alert("Failed to create clan");
-    }
-  }
-
-  async function inviteMember(clanId) {
-    const email = inviteEmails[clanId]?.trim();
-    if (!email) return alert("Enter email");
-    const invitedUid = await getUserIdByEmail(email);
-    if (!invitedUid) return alert("User not found");
-
-    try {
-      await updateDoc(doc(db, "clans", clanId), { members: arrayUnion(invitedUid) });
-      setInviteEmails(prev => ({ ...prev, [clanId]: "" }));
-    } catch (err) {
-      console.error(err);
-      alert("Failed to invite user");
     }
   }
 
@@ -157,21 +140,6 @@ export default function Clans() {
                 >
                   Delete
                 </button>
-
-                <div className="flex gap-2 mt-2">
-                  <input
-                    placeholder="Email to invite"
-                    value={inviteEmails[clan.id] || ""}
-                    onChange={e => setInviteEmails(prev => ({ ...prev, [clan.id]: e.target.value }))}
-                    className="flex-1 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-400"
-                  />
-                  <button
-                    onClick={() => inviteMember(clan.id)}
-                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                  >
-                    Invite
-                  </button>
-                </div>
 
                 <ul className="mt-2 space-y-1">
                   {clan.members?.map(m => (
