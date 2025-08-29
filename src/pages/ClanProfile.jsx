@@ -11,8 +11,8 @@ import {
   deleteDoc,
   getDocs,
 } from "firebase/firestore";
-import { db } from "../firebase";
-import { useAuth } from "../AuthContext";
+import { db } from "../firebase/firebase";
+import { useAuth } from "../context/AuthContext";
 
 export default function ClanProfile() {
   const { clanId } = useParams();
