@@ -9,7 +9,9 @@ import {
   collection,
   addDoc,
   deleteDoc,
-  getDoc
+  getDocs,
+  query,
+  where
 } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import { useAuth } from "../context/AuthContext";
@@ -44,27 +46,28 @@ export default function ClanProfile() {
     };
   }, [clanId]);
 
-  // Fetch emails for members + requesters
+  // Fetch emails for members + join requests efficiently
   useEffect(() => {
     const fetchEmails = async () => {
       if (!clan) return;
-
-      const uids = [...(clan.members || []), ...(requests.map(r => r.userId))];
+      const uids = [...(clan.members || []), ...requests.map(r => r.userId)];
       const uniqueUids = [...new Set(uids)];
+      if (uniqueUids.length === 0) return;
+
       let emailsMap = {};
 
-      for (const uid of uniqueUids) {
-        try {
-          const userSnap = await getDoc(doc(db, "users", uid));
-          if (userSnap.exists()) {
-            emailsMap[uid] = userSnap.data().email || uid;
-          } else {
-            emailsMap[uid] = uid;
-          }
-        } catch (err) {
-          console.error("Failed to fetch user email:", err);
-          emailsMap[uid] = uid;
-        }
+      // Firestore allows max 10 'in' filters, so batch if needed
+      const batches = [];
+      while (uniqueUids.length) {
+        batches.push(uniqueUids.splice(0, 10));
+      }
+
+      for (let batch of batches) {
+        const q = query(collection(db, "users"), where("__name__", "in", batch));
+        const snap = await getDocs(q);
+        snap.forEach(doc => {
+          emailsMap[doc.id] = doc.data().email || doc.id;
+        });
       }
 
       setUserEmails(emailsMap);
@@ -75,7 +78,6 @@ export default function ClanProfile() {
 
   if (!clan) return <p className="p-4">Clan not found</p>;
 
-  // Member actions
   const requestToJoin = async () => {
     if (!userId) return alert("You must be logged in");
     await addDoc(collection(db, "clans", clan.id, "joinRequests"), { userId });
@@ -122,21 +124,18 @@ export default function ClanProfile() {
       <h1 className="text-2xl font-bold">{clan.name}</h1>
       <p className="text-gray-700">{clan.description}</p>
 
-      {/* Request to join */}
       {clan.ownerId !== userId && !clan.members?.includes(userId) && (
         <button className="bg-blue-600 text-white px-4 py-2 rounded mt-3 hover:bg-blue-700" onClick={requestToJoin}>
           Request to Join
         </button>
       )}
 
-      {/* Leave clan */}
       {clan.ownerId !== userId && clan.members?.includes(userId) && (
         <button className="bg-yellow-500 text-white px-4 py-2 rounded mt-3 hover:bg-yellow-600" onClick={() => removeMember(userId)}>
           Leave Clan
         </button>
       )}
 
-      {/* Owner controls */}
       {clan.ownerId === userId && (
         <>
           <button className="bg-green-600 text-white px-4 py-2 rounded mt-3 hover:bg-green-700" onClick={inviteMember}>
@@ -148,7 +147,6 @@ export default function ClanProfile() {
         </>
       )}
 
-      {/* Members list */}
       <h2 className="text-xl font-semibold mt-6">Members</h2>
       <ul className="space-y-2 mt-2">
         {clan.members?.map((m) => (
@@ -161,7 +159,6 @@ export default function ClanProfile() {
         ))}
       </ul>
 
-      {/* Join requests */}
       {clan.ownerId === userId && (
         <>
           <h2 className="text-xl font-semibold mt-6">Join Requests</h2>

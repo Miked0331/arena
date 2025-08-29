@@ -9,7 +9,8 @@ import {
   doc,
   arrayUnion,
   arrayRemove,
-  deleteDoc
+  deleteDoc,
+  getDoc
 } from "firebase/firestore";
 import { db, auth } from '../firebase/firebase';
 import getUserIdByEmail from "../firebase/getUserIdByEmail";
@@ -19,7 +20,8 @@ export default function Clans() {
   const [newClanName, setNewClanName] = useState("");
   const [newClanDescription, setNewClanDescription] = useState("");
   const [userId, setUserId] = useState(null);
-  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteEmails, setInviteEmails] = useState({}); // map: clanId -> email
+  const [userEmails, setUserEmails] = useState({}); // UID -> email map
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,8 +30,26 @@ export default function Clans() {
 
     const q = query(collection(db, "clans"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setClans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const clansData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setClans(clansData);
       setLoading(false);
+
+      // Fetch emails for all members
+      const allMemberIds = [...new Set(clansData.flatMap(c => c.members || []))];
+      const fetchEmails = async () => {
+        const emailsMap = {};
+        for (let uid of allMemberIds) {
+          try {
+            const userSnap = await getDoc(doc(db, "users", uid));
+            emailsMap[uid] = userSnap.exists() ? userSnap.data().email || uid : uid;
+          } catch (err) {
+            console.error("Failed to fetch user email:", err);
+            emailsMap[uid] = uid;
+          }
+        }
+        setUserEmails(emailsMap);
+      };
+      fetchEmails();
     });
 
     return () => unsubscribe();
@@ -57,13 +77,14 @@ export default function Clans() {
   }
 
   async function inviteMember(clanId) {
-    if (!inviteEmail.trim()) return alert("Enter email");
-    const invitedUid = await getUserIdByEmail(inviteEmail.trim());
+    const email = inviteEmails[clanId]?.trim();
+    if (!email) return alert("Enter email");
+    const invitedUid = await getUserIdByEmail(email);
     if (!invitedUid) return alert("User not found");
 
     try {
       await updateDoc(doc(db, "clans", clanId), { members: arrayUnion(invitedUid) });
-      setInviteEmail("");
+      setInviteEmails(prev => ({ ...prev, [clanId]: "" }));
     } catch (err) {
       console.error(err);
       alert("Failed to invite user");
@@ -140,8 +161,8 @@ export default function Clans() {
                 <div className="flex gap-2 mt-2">
                   <input
                     placeholder="Email to invite"
-                    value={inviteEmail}
-                    onChange={e => setInviteEmail(e.target.value)}
+                    value={inviteEmails[clan.id] || ""}
+                    onChange={e => setInviteEmails(prev => ({ ...prev, [clan.id]: e.target.value }))}
                     className="flex-1 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-400"
                   />
                   <button
@@ -155,7 +176,7 @@ export default function Clans() {
                 <ul className="mt-2 space-y-1">
                   {clan.members?.map(m => (
                     <li key={m} className="flex justify-between items-center border-b py-1">
-                      <span>{m}</span>
+                      <span>{userEmails[m] || m}</span>
                       {m !== userId && (
                         <button
                           onClick={() => removeMember(clan.id, m)}
